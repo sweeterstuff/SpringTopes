@@ -225,6 +225,76 @@ def sortPointDepth():
     for i in range(len(allPoints)):
         newPoints[i] = allPoints[orders[i]]
 
+# makes rings and their points for totem pole loading
+def buildPointsAndRings(symmetry, structure):
+    newRings = []
+    newPoints = []
+    depth = 0
+    n = 0
+
+    # make the top spiked if asked
+    if structure[0] == 0:
+        newPoints.append(pg.Vector3(0,0.01,0))
+        newRings.append([n])
+        n += 1
+        depth += L/3
+
+    # add rotationally symmetric "totem pole" points
+    for i in range(structure[1]):
+        for l in range(symmetry):
+            pt = pg.Vector3(L*0.5/np.sin(np.pi/symmetry),depth,0).rotate_rad(2*np.pi*l/symmetry, pg.Vector3(0,10,0))
+            newPoints.append(pt)
+        newRings.append([n+i for i in range(symmetry)])
+        n += symmetry
+        depth += L/3
+
+    # make the bottom spiked if asked
+    if structure[2] == 0:
+        newPoints.append(pg.Vector3(0,depth,0))
+        newRings.append([n])
+        n += 1
+
+    return [newRings, newPoints]
+
+# makes faces for totem pole loading
+def buildFaces(symmetry, allRings, caps, instructions):
+    newFaces = []
+    if caps[0] == 1:
+        newFaces.append([i for i in allRings[0]])
+    elif caps[0] == 2:
+        bigFace = []
+        for i in range(len(allRings[0])):
+            bigFace.append(allRings[0][i])
+            bigFace.append(allRings[1][i])
+        newFaces.append(bigFace)
+
+    # repeat faces for each rotationally-symmetric piece
+    for i in range(symmetry):
+        for x in instructions:
+            face = []
+            for b in x:
+                face.append(rings[b[0]][(i+b[1])%(len(rings[b[0]]))])
+            newFaces.append(face)
+
+    if caps[2] == 1:
+        top = [i for i in allRings[-1]]
+        top.reverse()
+        newFaces.append(top)
+    elif caps[2] == 2:
+        bigFace = []
+        last = allRings[-1]
+        last.reverse()
+        secLast = allRings[len(allRings)-2]
+        secLast.reverse()
+
+        for i in range(len(allRings[-1])):
+            bigFace.append(secLast[i])
+            bigFace.append(last[i])
+        newFaces.append(bigFace)
+
+    return newFaces
+
+
 while running:
     ## RESET (#X to print, #J + #L to reset, #ESC to leave)
     for event in pg.event.get():
@@ -602,13 +672,14 @@ while running:
             if np.linalg.norm(diff) != 0:
                 target = [pg.Vector3(L*diff/np.linalg.norm(diff) - diff)]
             else:
-                target = pg.Vector3(0,0,0.01)
-            if round(sum(target,pg.Vector3(0,0,0))) != [0,0,0]:
+                target = [pg.Vector3(0,0,0.01)]
+
+            # round()
+            if round(sum(target,pg.Vector3(0,0,0))*100)/100 != [0,0,0]:
                 move[allFaces[i][l]] += target[0] * F
                 move[allFaces[i][l-1]] -= target[0] * F
                 if edgeStress:
                     stress[i] += np.abs(np.linalg.norm(target[0] * F))
-                    print(stress)
 
     # force coplanarity, !apply gas!, and force regularity if on
     for i in range(len(allFaces)):
@@ -657,7 +728,7 @@ while running:
     # set up for rendering
     for i in range(len(allFaces)):
         if edgeStress or faceStress:
-            stress[i] *= 100
+            stress[i] *= 1000
             if stress[i] > 255:
                 stress[i] = 255
             stressIndicator = (stress[i], 255 - stress[i], 0)
@@ -753,20 +824,35 @@ while running:
             try:
                 data = eval(pg.scrap.get_text())
                 if isinstance(data, list):
-                    resetToTet()
-                    allPoints = [pg.Vector3(x) for x in data[0]]
-                    move = [pg.Vector3(0,0,0) for i in allPoints]
-                    allFaces = data[1]
-                    colors = data[2]
-                    GAS = data[3] / 100
-                    rf = data[4]
-                    gui = 0
+                    selectedTri = 0
+                    selectedPoint = 0
+                    # loads a precise saved polyhedron if it's valid
+                    if not isinstance(data[0], int):
+                        resetToTet()
+                        allPoints = [pg.Vector3(x) for x in data[0]]
+                        move = [pg.Vector3(0,0,0) for i in allPoints]
+                        allFaces = data[1]
+                        colors = data[2]
+                        GAS = data[3] / 100
+                        rf = data[4]
+                        gui = 0
+
+                    else: # builds a totem pole otherwise
+                        resetToTet()
+                        rings = buildPointsAndRings(data[0], data[1])
+                        allPoints = rings[1]
+                        rings = rings[0]
+                        
+                        allFaces = buildFaces(data[0], rings, data[1], data[2])
+                        newColor(len(allFaces) - len(colors))
+                        move = [pg.Vector3(0,0,0) for i in allPoints]
+                        gui = 0
+
             except:
                 gui = gui
 
-    # restricts the framerate- dt is delta time, just in case it is needed.
+    # restricts the framerate- dt is delta time, though it isn't currently needed
     opCool -= 1
     pg.display.flip()
     dt = clock.tick(framerate) / 1000
-
 pg.quit()
