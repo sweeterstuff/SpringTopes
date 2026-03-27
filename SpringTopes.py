@@ -26,6 +26,8 @@ if F > 0.6:
 D = 50
 # L is the edge length
 L = 120
+# CAM is camera sensitivity
+CAM = 0.25
 FONT = pg.font.Font("freesansbold.ttf", 16)
 framerate = 60
 
@@ -43,13 +45,15 @@ selectedPoint = 0
 GAS = 0
 orders = [0]
 
-zoom = 1
 cam = pg.Vector3(1,0,0)
-saveM = [0,0]
-saveR = 0
-saveT = 0
+camY = pg.Vector3(0,1,0)
+camZ = pg.Vector3(0,0,1)
+
+zoom = 1
 rot = 0
 tilt = 0
+twist = 0
+
 opCool = 0
 newPoints = 0
 saveColor = (0,0,0)
@@ -93,6 +97,7 @@ def transform(point):
     output.y = np.cos(rot + pointR.x)*np.sin(tilt) * pointR.z + pointR.y * np.cos(tilt)
 
     output *= zoom
+    output = output.rotate_rad(twist)
 
     output.x += screen.get_width() / 2
     output.y += screen.get_height() / 2
@@ -324,25 +329,38 @@ while running:
     if pg.key.get_pressed()[pg.K_i]:
         zoom *= 1 / ZS
 
-    if pg.mouse.get_just_pressed()[0] == True:
-        saveM = pg.mouse.get_pos()
-        saveR = rot
-        saveT = tilt
-
+    # rotate axis about x then y if mouse pressed
+    displacement = pg.Vector2(pg.mouse.get_rel())
+    displacement.y = displacement.y * -1
     if pg.mouse.get_pressed()[0] == True:
-        rot = saveR + (pg.mouse.get_pos()[0] - saveM[0]) / 200
-        tilt = saveT + (pg.mouse.get_pos()[1] - saveM[1]) / 200
-        tilt = np.minimum(tilt,np.pi/2)
-        tilt = np.maximum(tilt,-np.pi/2)
+        # rotate about x & y parts for movement
+        camZ = pg.Vector3.rotate(camZ, displacement.x*CAM, camY)
+        cam = pg.Vector3.rotate(cam, displacement.x*CAM, camY)
 
-    # prevent rot from becoming an unnessacarily large value
-    if rot >= np.pi*2:
-        rot = rot - np.pi*2
-    if rot < 0:
-        rot = rot + np.pi*2
+        camY = pg.Vector3.rotate(camY, displacement.y*CAM, camZ)
+        cam = pg.Vector3.rotate(cam, displacement.y*CAM, camZ)
 
-    # calculate camera vector:
-    cam = pg.Vector3(np.cos(rot) * np.cos(tilt), -np.sin(tilt), -np.sin(rot) * np.cos(tilt))
+        # convert camera to rot, tilt, twist
+        Vcam = cam * 1.1
+        VcamZ = camZ * 1.1
+        VcamY = camY * 1.1
+
+        rot = -np.arctan2(Vcam.z,Vcam.x)
+
+        Vcam = pg.Vector3.rotate_rad(Vcam, -rot, (0,1,0))
+        VcamZ = pg.Vector3.rotate_rad(VcamZ, -rot, (0,1,0))
+        VcamY = pg.Vector3.rotate_rad(VcamY, -rot, (0,1,0))
+
+        tilt = -np.arctan2(Vcam.y,Vcam.x)
+     
+        Vcam = pg.Vector3.rotate_rad(Vcam, tilt, (0,0,1))
+        VcamZ = pg.Vector3.rotate_rad(VcamZ, tilt, (0,0,1))
+        VcamY = pg.Vector3.rotate_rad(VcamY, tilt, (0,0,1))
+
+        twist = -np.arctan2(VcamZ.y,VcamZ.z)
+
+    # calculate camera vector (if ever needed):
+    #cam = pg.Vector3(np.cos(rot) * np.cos(tilt), -np.sin(tilt), -np.sin(rot) * np.cos(tilt))
 
     #R toggle regularity force
     if pg.key.get_pressed()[pg.K_r] & (opCool <= 0):
