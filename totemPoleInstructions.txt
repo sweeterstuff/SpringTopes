@@ -1,8 +1,29 @@
-(GUIDE COMING SOON)
-copy and use in the menu opened w/ y
+[totem poles are to be copied and used in the Y-menu like saved polyhedra]
+DISSECTION / GUIDE:
+a cube can be input with the list:
+[4,[1,2,1],[[[0,0],[1,0],[1,1],[0,1]]]]
 
+cube[0] = 4, this is the symmetry of the polyhedron about the y-axis, always can be changed to make more polyhedra with the exact same structure but higher n-rotational symmetry
+
+cube[1] = [1,2,1], this instructs the code to form descending rings of n (from symmetry) points symmetric about the y-axis
+cube[1][0] and cube[1][2] are the top and bottom "caps" of the polyhedron, 0 adds a single top vertex, 1 combines the top ring into a face, and 2 combines the top two rings into a face
+cube[1][1] is the number of rings between the top and bottom, including those used for caps and two-ring caps
+
+^ for example, the code will interpret [1,2,1] and will make a list called "rings" like the following:
+rings = [[1,2,3,4][5,6,7,8]]
+(each sublist of rings is a singular ring at a certain y-value, with pointed caps there will also be a top/bottom ring with only one point)
+
+cube[2] = [[[0,0],[1,0],[1,1],[0,1]]], this is the instructions that the code will follow to build faces, repeated rotated n times to complete the symmetry
+each sublist in cube[2] (there's only one in this example) represents n (four) faces that can be treated as identical
+for the faces themselves, each point is marked with a ring (first number) and an offset (2nd number) which tell points where on each ring to go
+when building these points, assume 0 is the highest ring and they work their way downwards, and each offset rotates one point down the ring counterclockwise (from a top perspective)
+always build points counterclockwise from this perspective, or else the face will end up inverted
+(i understand that this is pretty difficult to do by just typing lists, but there's no better way currently)
+
+
+EXAMPLES:
 cube (general form prism)
 [4,[1,2,1],[[[0,0],[1,0],[1,1],[0,1]]]]
 
-cupola
+cupolas
 [5,[1,3,2],[[[0,0],[1,0],[2,1],[0,1]],[[0,2],[2,2],[1,2]]]]
