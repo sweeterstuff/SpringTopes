@@ -23,12 +23,18 @@ always build points counterclockwise from this perspective, or else the face wil
 
 
 EXAMPLES:
-cube (general form prism)
+prisms (cube)
 https://sweeterstuff.github.io/web/index.html?[4,[1,2,1],[[[0,0],[1,0],[1,1],[0,1]]]]
 (again, you can put the save at the end of any url with a ?]
 
-cupolas
+pyramids (tetrahedron)
+[3,[0,1,1],[[[0,0],[1,0],[1,1]]]]
+
+cupolas (pentagonal cupola)
 [5,[1,3,2],[[[0,0],[1,0],[2,1],[0,1]],[[0,2],[2,2],[1,2]]]]
 
-snub antiprism (icosahedron)
+spiky prisms (octahedron)
+[2,[1,3,1],[[[0,0],[1,0],[0,1]],[[0,0],[2,0],[1,0]],[[0,1],[1,0],[2,1]],[[2,0],[2,1],[1,0]],[[2,1],[2,2],[1,1]]]]
+
+snub antiprisms (icosahedron)
 [3,[1,4,1],[[[0,0],[1,0],[0,1]],[[0,0],[2,0],[1,0]],[[0,1],[1,0],[2,1]],[[2,0],[3,0],[1,0]],[[1,0],[3,0],[2,1]],[[3,0],[3,1],[2,1]]]]
